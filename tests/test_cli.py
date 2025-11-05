@@ -29,7 +29,7 @@ class TestCLIBasics:
             text=True,
         )
         assert result.returncode == 0
-        assert "1.0.0" in result.stdout
+        assert "1.0.1" in result.stdout
 
 
 class TestCLIArguments:

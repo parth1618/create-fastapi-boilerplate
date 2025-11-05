@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "create-fastapi-boilerplate"
-version = "1.0.0"
+version = "1.0.1"
 description = "Production-grade FastAPI project generator with enterprise features"
 readme = "README.md"
 requires-python = ">=3.9"

@@ -60,7 +60,7 @@ For more information, visit:
         "--version",
         "-v",
         action="version",
-        version="create-fastapi-boilerplate 1.0.0"
+        version="create-fastapi-boilerplate 1.0.1"
     )
     
     args = parser.parse_args()
