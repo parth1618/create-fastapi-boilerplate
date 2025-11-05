@@ -1,5 +1,6 @@
 """Tests for CLI interface."""
 
+import os
 import subprocess
 import sys
 
@@ -9,10 +10,13 @@ class TestCLIBasics:
 
     def test_cli_help(self) -> None:
         """Test --help flag."""
+        env = os.environ.copy()
+        env["PYTHONIOENCODING"] = "utf-8"  # Force UTF-8 for Windows
         result = subprocess.run(
             [sys.executable, "-m", "create_fastapi_boilerplate", "--help"],
             capture_output=True,
             text=True,
+            env=env
         )
         assert result.returncode == 0
         assert "Create a new FastAPI project" in result.stdout

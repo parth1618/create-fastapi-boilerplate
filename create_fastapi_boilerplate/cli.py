@@ -18,14 +18,14 @@ Examples:
   create-fastapi-boilerplate my-api --no-git
   
 Features:
-  ✅ JWT Authentication with RBAC
-  ✅ SQLAlchemy 2.0 with async PostgreSQL
-  ✅ Redis rate limiting
-  ✅ OpenTelemetry tracing
-  ✅ Prometheus metrics
-  ✅ Docker & Docker Compose
-  ✅ Full test suite
-  ✅ CI/CD with GitHub Actions
+  - JWT Authentication with RBAC
+  - SQLAlchemy 2.0 with async PostgreSQL
+  - Redis rate limiting
+  - OpenTelemetry tracing
+  - Prometheus metrics
+  - Docker & Docker Compose
+  - Full test suite
+  - CI/CD with GitHub Actions
   
 For more information, visit:
   https://github.com/parth1618/fastapi-boilerplate

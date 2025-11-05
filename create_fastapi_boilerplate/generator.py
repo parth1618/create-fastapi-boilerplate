@@ -214,8 +214,28 @@ class FastAPIProjectGenerator:
         try:
             os.chdir(self.project_path)
             
-            subprocess.run(["git", "init"], check=True, capture_output=True)
-            subprocess.run(["git", "add", "."], check=True, capture_output=True)
+            subprocess.run(
+                ["git", "init"],
+                check=True,
+                capture_output=True
+            )
+            
+            subprocess.run(
+                ["git", "config", "user.name", "create-fastapi-boilerplate"],
+                check=True,
+                capture_output=True
+            )
+            subprocess.run(
+                ["git", "config", "user.email", "no-reply@example.com"],
+                check=True,
+                capture_output=True
+            )
+            
+            subprocess.run(
+                ["git", "add", "."],
+                check=True,
+                capture_output=True
+            )
             subprocess.run(
                 ["git", "commit", "-m", "Initial commit from create-fastapi-boilerplate"],
                 check=True,
