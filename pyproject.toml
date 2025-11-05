@@ -5,26 +5,34 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "create-fastapi-boilerplate"
 version = "1.0.0"
+description = "Production-grade FastAPI project generator with enterprise features"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
 authors = [
     {name = "Parth Joshi", email = "parthjoshi.1618@gmail.com"}
 ]
-description = "Production-grade FastAPI project generator with enterprise features"
-readme = "README.md"
-requires-python = ">=3.8"
+keywords = [
+    "fastapi",
+    "boilerplate",
+    "template",
+    "generator",
+    "cli",
+    "project-generator"
+]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "Topic :: Software Development :: Code Generators",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Framework :: FastAPI",
+    "Operating System :: OS Independent",
 ]
-keywords = ["fastapi", "boilerplate", "template", "generator", "cli"]
 
 [project.urls]
 Homepage = "https://github.com/parth1618/fastapi-boilerplate"
@@ -35,8 +43,16 @@ Repository = "https://github.com/parth1618/fastapi-boilerplate"
 [project.scripts]
 create-fastapi-boilerplate = "create_fastapi_boilerplate.cli:main"
 
-[tool.setuptools]
-packages = ["create_fastapi_boilerplate"]
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov",
+    "pytest-mock",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+exclude = ["tests*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -61,5 +77,5 @@ exclude_lines = [
     "def __repr__",
     "raise AssertionError",
     "raise NotImplementedError",
-    "if __name__ == .__main__.:",
+    "if __name__ == \"__main__\":",
 ]
