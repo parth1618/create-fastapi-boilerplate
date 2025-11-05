@@ -3,138 +3,92 @@ name: Publish to PyPI
 on:
   release:
     types: [published]
-  workflow_dispatch:  # Allows manual trigger
+  workflow_dispatch:
 
 permissions:
-  contents: write  # Needed for uploading release assets
+  contents: write
 
 jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Needed for version/tag logic
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Install build tools
+      - name: Install tools
         run: |
           python -m pip install --upgrade pip
           pip install build twine
 
-      # -------------------------------------------------
-      # 1. Extract version from tag (e.g. v1.0.1 → 1.0.1)
-      # -------------------------------------------------
-      - name: Get version from tag
-        id: version
+      # —————————————————————————————————————
+      # 1. Get version from tag (v1.0.1 → 1.0.1)
+      # —————————————————————————————————————
+      - name: Extract version
+        id: tag
         run: |
           TAG="${{ github.ref_name }}"
-          VERSION="${TAG#v}"  # Remove 'v' prefix
+          VERSION="${TAG#v}"
           echo "tag=$TAG" >> $GITHUB_OUTPUT
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-      # -------------------------------------------------
-      # 2. Verify pyproject.toml version matches tag
-      # -------------------------------------------------
-      - name: Validate version match
+      # —————————————————————————————————————
+      # 2. Validate pyproject.toml matches tag
+      # —————————————————————————————————————
+      - name: Validate version
         run: |
-          PKG_VERSION=$(python -c "
+          PKG_VER=$(python - <<'PY'
           import tomllib, sys
           with open('pyproject.toml', 'rb') as f:
-              data = tomllib.load(f)
-              print(data['project']['version'])
-          ")
-          TAG="${{ steps.version.outputs.tag }}"
-          EXPECTED="v$PKG_VERSION"
-          
-          if [ "$TAG" != "$EXPECTED" ]; then
-            echo "ERROR: Tag '$TAG' does not match pyproject.toml version '$PKG_VERSION'"
-            echo "Fix: Use 'git tag v$PKG_VERSION' and push"
+              print(tomllib.load(f)['project']['version'])
+          PY
+          )
+          if [ "$PKG_VER" != "${{ steps.tag.outputs.version }}" ]; then
+            echo "ERROR: pyproject.toml version '$PKG_VER' ≠ tag '${{ steps.tag.outputs.tag }}'"
+            echo "Fix: Update version in pyproject.toml to match tag"
             exit 1
           fi
-          echo "Version match: $TAG == v$PKG_VERSION"
+          echo "Version OK: $PKG_VER"
 
-      # -------------------------------------------------
-      # 3. Check if version already exists on PyPI
-      # -------------------------------------------------
-      - name: Check PyPI for existing version
-        id: pypi_check
-        env:
-          VERSION: ${{ steps.version.outputs.version }}
+      # —————————————————————————————————————
+      # 3. Clean old artifacts (CRITICAL!)
+      # —————————————————————————————————————
+      - name: Clean build
         run: |
-          echo "Checking PyPI for version $VERSION..."
-          if curl -sf "https://pypi.org/pypi/create-fastapi-boilerplate/$VERSION/json" > /dev/null; then
-            echo "Version $VERSION already exists on PyPI. Skipping upload."
-            echo "exists=true" >> $GITHUB_OUTPUT
-          else
-            echo "Version $VERSION not found. Will build and upload."
-            echo "exists=false" >> $GITHUB_OUTPUT
-          fi
-
-      # -------------------------------------------------
-      # 4. Clean and build ONLY if needed
-      # -------------------------------------------------
-      - name: Clean old artifacts
-        if: steps.pypi_check.outputs.exists != 'true'
-        run: |
-          echo "Cleaning old build artifacts..."
+          echo "Removing old dist/ build/ egg-info..."
           rm -rf dist/ build/ *.egg-info
 
+      # —————————————————————————————————————
+      # 4. Build fresh package
+      # —————————————————————————————————————
       - name: Build package
-        if: steps.pypi_check.outputs.exists != 'true'
         run: |
-          echo "Building package..."
+          echo "Building version ${{ steps.tag.outputs.version }}..."
           python -m build
 
-      # -------------------------------------------------
-      # 5. Upload to PyPI ONLY if new
-      # -------------------------------------------------
+      # —————————————————————————————————————
+      # 5. Verify wheel name
+      # —————————————————————————————————————
+      - name: Verify built files
+        run: |
+          echo "Built files:"
+          ls -la dist/
+          if ! ls dist/*-${{ steps.tag.outputs.version }}-*.whl 1> /dev/null 2>&1; then
+            echo "ERROR: No wheel with version ${{ steps.tag.outputs.version }} found!"
+            exit 1
+          fi
+
+      # —————————————————————————————————————
+      # 6. Upload to PyPI
+      # —————————————————————————————————————
       - name: Publish to PyPI
-        if: steps.pypi_check.outputs.exists != 'true'
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-        run: |
-          echo "Uploading to PyPI..."
-          twine upload dist/*
-
-      # -------------------------------------------------
-      # 6. Always upload built assets to GitHub Release
-      # -------------------------------------------------
-      - name: Upload wheels to GitHub Release
-        if: always()  # Run even if upload skipped
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: dist/create_fastapi_boilerplate-${{ steps.version.outputs.version }}-py3-none-any.whl
-          asset_name: create_fastapi_boilerplate-${{ steps.version.outputs.version }}-py3-none-any.whl
-          asset_content_type: application/x-wheel+zip
-
-      - name: Upload source tarball to GitHub Release
-        if: always()
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: dist/create_fastapi_boilerplate-${{ steps.version.outputs.version }}.tar.gz
-          asset_name: create_fastapi_boilerplate-${{ steps.version.outputs.version }}.tar.gz
-          asset_content_type: application/gzip
-
-      # -------------------------------------------------
-      # 7. Success message
-      # -------------------------------------------------
-      - name: Done
-        run: |
-          if [ "${{ steps.pypi_check.outputs.exists }}" = "true" ]; then
-            echo "Version ${{ steps.version.outputs.version }} already on PyPI. Release assets attached."
-          else
-            echo "Successfully published ${{ steps.version.outputs.version }} to PyPI!"
-          fi
+        run: twine upload dist/*
